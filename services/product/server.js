@@ -93,6 +93,6 @@ app.delete('/products/:id', verifyToken, async (req, res) => {
   }
 });
 
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'product' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', service: 'product', version: '2.0' }));
 
 init().then(() => app.listen(3002, () => console.log('Product service running on port 3002')));
