@@ -1,0 +1,5 @@
+apiVersion: v2
+name: ecommerce
+description: E-Commerce Shop on Kubernetes
+type: application
+version: 1.0.0

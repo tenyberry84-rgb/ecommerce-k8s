@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./services/auth
+          push: true
+          tags: tenyberry/auth-service:latest
+
+      - name: Build and push product-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./services/product
+          push: true
+          tags: tenyberry/product-service:latest
+
+      - name: Build and push order-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./services/order
+          push: true
+          tags: tenyberry/order-service:latest
+
+      - name: Build and push frontend-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./services/frontend
+          push: true
+          tags: tenyberry/frontend-service:latest
+
+      - name: Done
+        run: echo "All images pushed to Docker Hub successfully!"

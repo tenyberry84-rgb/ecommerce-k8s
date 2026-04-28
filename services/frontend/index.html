@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K8s Shop</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; }
+    header { background: #1a1a2e; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.4rem; }
+    .container { max-width: 1100px; margin: 25px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card h2 { margin-bottom: 18px; color: #1a1a2e; font-size: 1.2rem; }
+    input { width: 100%; padding: 10px 14px; margin: 5px 0 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    button { padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+    button:hover { background: #3a56d4; }
+    button.green { background: #2ecc71; } button.green:hover { background: #27ae60; }
+    button.red { background: #e74c3c; } button.red:hover { background: #c0392b; }
+    button.small { padding: 6px 12px; font-size: 12px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab { padding: 9px 22px; background: #e8ecf0; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+    .tab.active { background: #4361ee; color: white; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .prod-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 18px; }
+    .prod-card h3 { margin-bottom: 8px; font-size: 1rem; }
+    .price { color: #2ecc71; font-weight: bold; font-size: 1.2rem; margin: 6px 0; }
+    .stock { color: #888; font-size: 0.85rem; margin-bottom: 12px; }
+    .msg { padding: 10px 14px; margin: 10px 0; border-radius: 6px; font-size: 14px; }
+    .msg.ok { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+    .msg.err { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+    .msg.info { background: #cce5ff; color: #004085; border-left: 4px solid #007bff; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { padding: 10px 14px; background: #f8f9fa; text-align: left; border-bottom: 2px solid #dee2e6; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f0f2f5; }
+    .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; background: #ffc107; color: #333; }
+    .source-tag { font-size: 11px; background: #e8ecf0; padding: 2px 8px; border-radius: 10px; margin-left: 8px; color: #555; }
+    .center { text-align: center; color: #888; padding: 20px; }
+    .auth-wrap { max-width: 420px; margin: 60px auto; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-grid input { margin: 0; }
+    #app-section { display: none; }
+    .user-info { font-size: 13px; color: #ccc; margin-right: 12px; }
+    .stat-bar { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+    .stat { background: #f0f2f5; padding: 8px 15px; border-radius: 6px; font-size: 13px; }
+    .stat span { font-weight: bold; color: #4361ee; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>K8s Shop - E-Commerce on Kubernetes</h1>
+  <div style="display:flex;align-items:center">
+    <span class="user-info" id="user-name"></span>
+    <button id="logout-btn" style="display:none;background:#e74c3c;padding:7px 14px;font-size:13px" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<!-- Auth Section -->
+<div class="container" id="auth-section">
+  <div class="card auth-wrap">
+    <div class="tabs" id="auth-tabs">
+      <div class="tab active" onclick="showAuthTab('login', this)">Login</div>
+      <div class="tab" onclick="showAuthTab('register', this)">Register</div>
+    </div>
+
+    <div id="login-form">
+      <h2>Welcome back</h2>
+      <input type="email" id="login-email" placeholder="Email address">
+      <input type="password" id="login-password" placeholder="Password">
+      <button style="width:100%" onclick="login()">Login</button>
+      <div id="login-msg"></div>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <h2>Create account</h2>
+      <input type="text" id="reg-name" placeholder="Full name">
+      <input type="email" id="reg-email" placeholder="Email address">
+      <input type="password" id="reg-password" placeholder="Password">
+      <button style="width:100%" onclick="register()">Register</button>
+      <div id="reg-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- App Section -->
+<div class="container" id="app-section">
+  <div class="tabs" id="main-tabs">
+    <div class="tab active" onclick="showSection('products', this)">Products</div>
+    <div class="tab" onclick="showSection('orders', this)">My Orders</div>
+    <div class="tab" onclick="showSection('add-product', this)">Add Product</div>
+  </div>
+
+  <!-- Products -->
+  <div id="products-section">
+    <div class="card">
+      <h2>
+        All Products
+        <span class="source-tag" id="products-source"></span>
+        <button class="small" style="float:right;background:#6c757d" onclick="loadProducts()">Refresh</button>
+      </h2>
+      <div id="products-msg"></div>
+      <div class="grid" id="products-grid">
+        <div class="center">Loading products...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders -->
+  <div id="orders-section" style="display:none">
+    <div class="card">
+      <h2>My Orders</h2>
+      <div id="orders-msg"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th><th>Product ID</th><th>Qty</th><th>Total</th><th>Status</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Product -->
+  <div id="add-product-section" style="display:none">
+    <div class="card" style="max-width:500px">
+      <h2>Add New Product</h2>
+      <input type="text" id="prod-name" placeholder="Product name (e.g. iPhone 15)">
+      <input type="number" id="prod-price" placeholder="Price (e.g. 999.99)" step="0.01">
+      <input type="number" id="prod-stock" placeholder="Stock quantity (e.g. 50)">
+      <button class="green" onclick="addProduct()">Add Product</button>
+      <div id="add-prod-msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let token = localStorage.getItem('shop_token');
+  let userName = localStorage.getItem('shop_user');
+  if (token) showApp();
+
+  function showAuthTab(tab, el) {
+    document.querySelectorAll('#auth-tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+  }
+
+  async function register() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!name || !email || !password) return showMsg('reg-msg', 'All fields required', 'err');
+    const res = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showMsg('reg-msg', 'Registered! Please login now.', 'ok');
+    } else {
+      showMsg('reg-msg', data.error || 'Registration failed', 'err');
+    }
+  }
+
+  async function login() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) return showMsg('login-msg', 'Email and password required', 'err');
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      token = data.token;
+      userName = data.name;
+      localStorage.setItem('shop_token', token);
+      localStorage.setItem('shop_user', userName);
+      showApp();
+    } else {
+      showMsg('login-msg', data.error || 'Login failed', 'err');
+    }
+  }
+
+  function showApp() {
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('app-section').style.display = 'block';
+    document.getElementById('user-name').textContent = 'Hello, ' + (userName || 'User');
+    document.getElementById('logout-btn').style.display = 'inline';
+    loadProducts();
+  }
+
+  function logout() {
+    localStorage.removeItem('shop_token');
+    localStorage.removeItem('shop_user');
+    token = null;
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('app-section').style.display = 'none';
+    document.getElementById('logout-btn').style.display = 'none';
+    document.getElementById('user-name').textContent = '';
+  }
+
+  function showSection(section, el) {
+    ['products', 'orders', 'add-product'].forEach(s => {
+      document.getElementById(s + '-section').style.display = 'none';
+    });
+    document.getElementById(section + '-section').style.display = 'block';
+    document.querySelectorAll('#main-tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    if (section === 'orders') loadOrders();
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/products');
+      const data = await res.json();
+      document.getElementById('products-source').textContent = data.source;
+      const grid = document.getElementById('products-grid');
+      if (!data.data.length) {
+        grid.innerHTML = '<div class="center">No products yet. Add some!</div>';
+        return;
+      }
+      grid.innerHTML = data.data.map(p => `
+        <div class="prod-card">
+          <h3>${p.name}</h3>
+          <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+          <div class="stock">In stock: ${p.stock}</div>
+          <button class="green" style="width:100%" onclick="placeOrder(${p.id}, ${p.price}, '${p.name.replace(/'/g, "\\'")}')">Buy Now</button>
+        </div>
+      `).join('');
+    } catch (err) {
+      showMsg('products-msg', 'Failed to load products: ' + err.message, 'err');
+    }
+  }
+
+  async function addProduct() {
+    const name = document.getElementById('prod-name').value.trim();
+    const price = parseFloat(document.getElementById('prod-price').value);
+    const stock = parseInt(document.getElementById('prod-stock').value);
+    if (!name || !price) return showMsg('add-prod-msg', 'Name and price required', 'err');
+    const res = await fetch('/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name, price, stock: stock || 0 })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showMsg('add-prod-msg', 'Product added successfully!', 'ok');
+      document.getElementById('prod-name').value = '';
+      document.getElementById('prod-price').value = '';
+      document.getElementById('prod-stock').value = '';
+    } else {
+      showMsg('add-prod-msg', data.error || 'Failed to add product', 'err');
+    }
+  }
+
+  async function placeOrder(productId, price, name) {
+    if (!token) return alert('Please login first');
+    const qty = prompt('How many "' + name + '"?\n(Price: $' + parseFloat(price).toFixed(2) + ' each)');
+    if (!qty || parseInt(qty) < 1) return;
+    const total = parseFloat(price) * parseInt(qty);
+    const res = await fetch('/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ product_id: productId, quantity: parseInt(qty), total_price: total })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Order placed! Total: $' + total.toFixed(2));
+    } else {
+      alert('Error: ' + (data.error || 'Order failed'));
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await fetch('/orders', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const orders = await res.json();
+      const tbody = document.getElementById('orders-body');
+      if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="center">No orders yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td>#${o.id}</td>
+          <td>Product #${o.product_id}</td>
+          <td>${o.quantity}</td>
+          <td>$${parseFloat(o.total_price).toFixed(2)}</td>
+          <td><span class="badge">${o.status}</span></td>
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      showMsg('orders-msg', 'Failed to load orders', 'err');
+    }
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="msg ' + type + '">' + text + '</div>';
+  }
+</script>
+</body>
+</html>
